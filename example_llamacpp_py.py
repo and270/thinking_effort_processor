@@ -8,7 +8,7 @@ llm = Llama(model_path=model_path)
 
 # Define the thinking effort level
 thinking_effort = 0.0  # Very low thinking effort for this example
-scale_factor = 100 #Controls the intensity of the scaling effect (default=2). For QwQ it seems we need bigger than 2.
+scale_factor = 4 #Controls the intensity of the scaling effect (default=2). For QwQ it seems we need bigger than 2.
 
 # Get the token ID for the '</think>' token
 end_thinking_token_id = 151668   #IMPORTANT: this is the token id for </think> ON QwQ model. If other model, YOU MUST check on tokenizer configs

@@ -1,25 +1,41 @@
 def thinking_effort_processor(thinking_effort, end_thinking_token_id, scale_factor=2):
-    """
-    Returns a function that scales the logit of the end_thinking_token_id
-    based on the specified thinking_effort.
-    
-    Args:
-        thinking_effort: A value between 0 and 1 that controls how much thinking to do.
-            Higher values (closer to 1) encourage more thinking by reducing the probability
-            of the end_thinking_token.
-            Lower values (closer to 0) encourage less thinking by increasing the probability
-            of the end_thinking_token.
-        end_thinking_token_id: The token ID that marks the end of thinking.
-        scale_factor: Controls the intensity of the scaling effect (default=2).
-            Higher values create a more dramatic difference between high and low
-            thinking_effort settings.
-    
-    Returns:
-        A logit processor function that modifies the probability of the end_thinking_token.
-    """
     scale = scale_factor ** (1.0 - thinking_effort)
+    token_generated = [False]
 
     def processor(input_ids, logits):
+        if token_generated[0]:
+            return logits
+
+        # --- Convert "input_ids" to one integer for "last token" ---
+        last_token_id = None
+
+        # If it's just a Python list (common in some backends):
+        if isinstance(input_ids, list):
+            last_token_id = input_ids[-1]
+
+        # If it's a NumPy array (common in llama_cpp):
+        elif hasattr(input_ids, "shape"):
+            # shape might be (seq_length,) or (batch, seq_length)
+            if len(input_ids.shape) == 2:
+                # get the last row's last element
+                last_token_id = input_ids[-1, -1]
+            else:
+                # e.g. shape == (seq_length,)
+                last_token_id = input_ids[-1]
+
+            # convert that scalar array to a Python int
+            last_token_id = int(last_token_id)
+
+        else:
+            # fallback if it's just a scalar or something else
+            last_token_id = input_ids
+
+        # --- Now compare ---
+        if last_token_id == end_thinking_token_id:
+            token_generated[0] = True
+            return logits
+
+        # If we haven't yet seen the end_thinking_token, scale its logit
         logits[end_thinking_token_id] *= scale
         return logits
 

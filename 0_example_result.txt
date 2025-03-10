@@ -1,0 +1,31 @@
+What is the capital of France?
+
+(mpodel: deepseek-ai/DeepSeek-R1-Distill-Qwen-1.5B)
+
+Regular Inference: 
+Okay, so I need to figure out what the capital of France is. I've heard a few things before, but I'm not entirely sure. Let me start by recalling what I know about France. France is a country in Europe, known for its diverse landscapes and vibrant culture. The name "France" itself comes from the French word "français," which means "french" or "colorful." I think the capital is a significant city, maybe something like Paris or maybe another city.
+
+I remember that Paris is the most famous capital, but I'm not 100% certain. I've heard of other capitals, like London, but I think London is in the UK, so that's not France. Maybe I should look for more information or maybe check a map. I know that France is divided into several departments, and Paris is one of them. I think Paris is the capital, but I'm not entirely sure.
+
+Wait, I also remember hearing about the Eiffel Tower being in Paris. That makes sense because it's a major landmark in the city. There's also the Louvre Museum, which is another important place. I think Paris is the capital because it's the administrative and financial center, and it's also the capital of the Seine River region.
+
+Let me think if there's any other capital nearby. I know that there's a smaller city called Monaco, but that's in Monaco, which is in France, but Monaco isn't the capital. Monaco is the capital of the Republic of Montenegro. So that's not it.
+
+I also recall that the Eiffel Tower is a famous landmark in Paris, so that confirms that Paris is the capital. I don't think I've heard of any other capital in France. Maybe some other European countries have capitals in different cities, but in France, Paris is definitely the one.
+
+I should also consider if there's any chance that another city might become the capital one day, but I don't think that's the case. The capital is always the administrative and financial center, so Paris remains the capital of France.
+
+To summarize, I believe the capital of France is Paris. I've heard this mentioned in many contexts, and it makes sense as the administrative and financial hub. There are a lot of landmarks and cultural attractions in Paris, which further support the idea that it's the capital.
+</think>
+
+The capital of France is Paris. It is the administrative and financial center of the country and the capital of the Seine River region. Paris is known for its landmarks, such as the Eiffel Tower, and is widely celebrated for its cultural and historical significance.
+
+----------------------------------------------------
+
+Thinking Effort Inference (0.1): </think>
+
+The capital of France is Paris
+
+
+----------------------------------------------------
+----------------------------------------------------

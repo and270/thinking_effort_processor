@@ -2,7 +2,7 @@ from llama_cpp import Llama
 from thinking_effort_llamacpp_py import thinking_effort_processor
 
 
-model_path = "C:/Users/andre/.cache/lm-studio/models/lmstudio-community/QwQ-32B-GGUF/QwQ-32B-Q6_K.gguf"
+model_path = "path/to/your/model.gguf (end_thinking_token_id was adjusted to QwQ model)"
 
 llm = Llama(model_path=model_path)
 

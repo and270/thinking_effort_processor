@@ -12,7 +12,7 @@ def thinking_effort_processor(thinking_effort, end_thinking_token_id, scale_fact
             - Lower values (closer to 0) encourage less thinking by more strongly scaling up
               the probability of the end_thinking_token_id (i.e., large scaling).
         end_thinking_token_id (int):
-            The token ID that marks the end of the "thinking" phase (e.g. </think>).
+            The token ID that marks the end of the "thinking" phase (e.g. </think>). On QwQ model, for example, this is 151668.
         scale_factor (float, optional):
             Controls the intensity of the scaling effect (default=2).
             - At thinking_effort=0.0, the end_thinking_token_id logit is multiplied by

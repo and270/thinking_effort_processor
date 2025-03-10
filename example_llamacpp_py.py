@@ -1,45 +1,42 @@
 from llama_cpp import Llama
 from thinking_effort_llamacpp_py import thinking_effort_processor
 
-# Path to the downloaded GGUF model file
-model_path = "path/to/DeepSeek-R1-Distill-Qwen-1.5B.gguf"
 
-# Initialize the Llama model
+model_path = "C:/Users/andre/.cache/lm-studio/models/lmstudio-community/QwQ-32B-GGUF/QwQ-32B-Q6_K.gguf"
+
 llm = Llama(model_path=model_path)
 
 # Define the thinking effort level
-thinking_effort = 0.1  # Adjust between 0 and 2 as needed
+thinking_effort = 0.1  # Very low thinking effort for this example
 
 # Get the token ID for the '</think>' token
-end_thinking_token = "</think>"
-end_thinking_token_id = llm.token_to_id(end_thinking_token)
+end_thinking_token_id = 151668   #IMPORTANT: this is the token id for </think> ON QwQ model. If other model, YOU MUST check on tokenizer configs
 
-# Create the logits processor function
-logits_processor_fn = thinking_effort_processor(
-    thinking_effort=thinking_effort,
-    end_thinking_token_id=end_thinking_token_id
-)
+processor = thinking_effort_processor(thinking_effort, end_thinking_token_id)
+logits_processor = [processor]
 
-# Define the prompt
-prompt = "What is the capital of France?"
+#IMPORTANT: chat template for Qwen model. If other model, you must change the prompt format.
+prompt = """<|im_start|>user
+What is the capital of France?
+<|im_end|>
+<|im_start|>assistant
+<think>
+"""
 
-# Generate text with regular inference (without the custom logits processor)
+# Regular inference if you want to compare
 regular_output = llm.create_completion(
-    prompt,
-    max_tokens=8048,
+    prompt, 
+    max_tokens=8048, 
     temperature=0.6
 )
-
-# Print the regular generated text
 print("Regular Inference:", regular_output['choices'][0]['text'].strip())
 
-# Generate text with the custom logits processor (thinking effort)
-thinking_effort_output = llm.create_completion(
+# Thinking effort inference
+thinking_output = llm.create_completion(
     prompt,
     max_tokens=8048,
     temperature=0.6,
-    logits_processor=logits_processor_fn
+    logits_processor=logits_processor
 )
 
-# Print the thinking effort generated text
-print("Thinking Effort Inference:", thinking_effort_output['choices'][0]['text'].strip())
+print("Thinking Effort Inference:", thinking_output['choices'][0]['text'].strip())

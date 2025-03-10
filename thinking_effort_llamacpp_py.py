@@ -6,7 +6,6 @@ def thinking_effort_processor(thinking_effort, end_thinking_token_id):
     scale = 2 ** (1.0 - thinking_effort)
 
     def processor(input_ids, logits):
-        # Multiply the logit for the end-thinking token
         logits[end_thinking_token_id] *= scale
         return logits
 

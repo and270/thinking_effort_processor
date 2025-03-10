@@ -11,7 +11,8 @@ think_end_token_id = tokenizer.convert_tokens_to_ids("</think>")
 # Create the custom processor
 thinking_effort_processor = ThinkingEffortProcessor(
     end_thinking_token_id=think_end_token_id,
-    thinking_effort=0.1 #very low thinking effort
+    thinking_effort=0.1, #very low thinking effort
+    scale_factor=2  #default scale factor
 )
 
 logits_processor = LogitsProcessorList([thinking_effort_processor])
@@ -26,14 +27,14 @@ input_ids = tokenizer.apply_chat_template(
 
 
 # Compare to regular inference
-regular_output = model.generate(
-    input_ids,
-    max_new_tokens=8048,
-    do_sample=True,
-    temperature=0.6,
-)
-regular_response = tokenizer.decode(regular_output[0][input_ids.shape[-1]:], skip_special_tokens=True)
-print("Regular Inference:", regular_response.strip())
+#regular_output = model.generate(
+#    input_ids,
+#    max_new_tokens=8048,
+#    do_sample=True,
+#    temperature=0.6,
+#)
+#regular_response = tokenizer.decode(regular_output[0][input_ids.shape[-1]:], skip_special_tokens=True)
+#print("Regular Inference:", regular_response.strip())
 
 
 # Thinking Effort Inference

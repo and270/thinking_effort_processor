@@ -1,4 +1,8 @@
-#example usage
+import sys
+import os
+
+sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
+
 from transformers import AutoModelForCausalLM, AutoTokenizer, LogitsProcessorList
 from thinking_effort_transformers import ThinkingEffortProcessor
 

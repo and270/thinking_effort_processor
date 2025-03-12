@@ -32,6 +32,8 @@ pip install transformers
 pip install llama-cpp-python
 ```
 
+(show how to reun the examples. For bauncing ball, we should do cd example/bouncing_ball   and then python inference_hight_thinking_llamacpp_py.py)
+
 ## How It Works
 
 The controller scales the logits (prediction scores) for the end-thinking token based on the desired thinking effort:

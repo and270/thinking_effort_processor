@@ -1,3 +1,8 @@
+import sys
+import os
+
+sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
+
 from llama_cpp import Llama
 from thinking_effort_llamacpp_py import thinking_effort_processor
 
@@ -5,8 +10,7 @@ model_path = "C:/Users/andre/.cache/lm-studio/models/lmstudio-community/QwQ-32B-
 
 llm = Llama(model_path=model_path, n_ctx=131072)
 
-# Define the thinking effort level
-thinking_effort = 2.5
+thinking_effort = 2.5 
 
 # Get the token ID for the '</think>' token
 end_thinking_token_id = 151668   #</think> token id for QwQ model
@@ -38,8 +42,8 @@ Write a Python program that shows 20 balls bouncing inside a spinning heptagon:
 # Open a file to save the response
 output_file = "llm_response.txt"
 with open(output_file, "w", encoding="utf-8") as f:
-    # Stream the output with thinking effort
-    print("Streaming output with thinking effort:")
+
+    print("Streaming output with thinking effort (response will also be saved in llm_response.txt):")
     for chunk in llm.create_completion(
         prompt,
         max_tokens=64000,
@@ -48,12 +52,12 @@ with open(output_file, "w", encoding="utf-8") as f:
         stream=True  # Enable streaming
     ):
         chunk_text = chunk['choices'][0]['text']
-        # Print to console
+
         print(chunk_text, end='', flush=True)
-        # Write to file
+
         f.write(chunk_text)
         f.flush()  # Make sure content is written immediately
 
-# Add a final newline
+
 print()
 print(f"Full response has been saved to {output_file}")

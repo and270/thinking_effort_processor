@@ -1,7 +1,6 @@
 from llama_cpp import Llama
 from thinking_effort_llamacpp_py import thinking_effort_processor
 
-
 model_path = "C:/Users/andre/.cache/lm-studio/models/lmstudio-community/QwQ-32B-GGUF/QwQ-32B-Q6_K.gguf"
 
 llm = Llama(model_path=model_path, n_ctx=131072)
@@ -10,7 +9,7 @@ llm = Llama(model_path=model_path, n_ctx=131072)
 thinking_effort = 2.5
 
 # Get the token ID for the '</think>' token
-end_thinking_token_id = 151668   #</think> token id for DeepSeek-R1-Distill-QwQ
+end_thinking_token_id = 151668   #</think> token id for QwQ model
 
 processor = thinking_effort_processor(thinking_effort, end_thinking_token_id)
 logits_processor = [processor]

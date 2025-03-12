@@ -1,3 +1,8 @@
+import sys
+import os
+
+sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
+
 from llama_cpp import Llama
 from thinking_effort_llamacpp_py import thinking_effort_processor
 

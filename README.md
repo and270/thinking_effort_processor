@@ -51,3 +51,18 @@ Once the end-thinking token is generated, the controller stops modifying logits.
 - The `scale_factor` parameter may need adjustment based on the model
 
 See the example Python files for implementation details and usage patterns.
+
+## Running Examples
+
+### Bouncing Ball Example
+To run the bouncing ball example with llama cpp python:
+
+```bash
+cd examples/bouncing_ball
+python inference_high_thinking_llamacpp.py
+```
+
+This example demonstrates the inference for bouncing balls prompt on a high thinking setup (2.5)
+
+### Other Examples
+Additional examples can be found in the `examples` directory, each showing different use cases for the thinking effort controller.

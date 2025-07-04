@@ -52,6 +52,20 @@ Once the end-thinking token is generated, the controller stops modifying logits.
 
 See the example Python files for implementation details and usage patterns.
 
+## Example Dependencies
+
+To run the provided scripts, you may need to install additional packages.
+
+### For the evaluation script (`eval/evaluate_thinking_effort.py`)
+
+```bash
+pip install transformers datasets pandas accelerate
+```
+
+### For the inference scripts (`examples/`)
+
+The core dependency is either `transformers` or `llama-cpp-python`, which you should have installed from the **Installation** section. No other dependencies are required for the inference examples.
+
 ## Running Examples
 
 ### Bouncing Ball Example

@@ -17,17 +17,31 @@ import pandas as pd
 
 from thinking_effort_transformers import ThinkingEffortProcessor
 
+EVALUATION_CONFIG = {
+    "model_name": "deepseek-ai/DeepSeek-R1-Distill-Qwen-1.5B",
+    "thinking_efforts": [0.0, 0.25, 0.5, 0.75, 1.0, 1.25, 1.5],
+    "scale_factors": [1.5, 2.0, 2.5, 3.0, 4.0],
+    "max_questions": 300,
+    "max_new_tokens": 8192,
+    "temperature": 0.6,
+}
+
+
 class GSM8kEvaluator:
-    def __init__(self, model_name: str = "deepseek-ai/DeepSeek-R1-Distill-Qwen-1.5B", device: str = "auto"):
+    def __init__(self, model_name: str, max_new_tokens: int, temperature: float, device: str = "auto"):
         """
         Initialize the evaluator with a model and tokenizer.
         
         Args:
-            model_name: HuggingFace model name (default: deepseek-ai/DeepSeek-R1-Distill-Qwen-1.5B)
+            model_name: HuggingFace model name
+            max_new_tokens: Maximum number of new tokens to generate
+            temperature: Sampling temperature for generation
             device: Device to use for inference ("auto", "cuda", "cpu")
         """
         print(f"Loading model: {model_name}")
         self.model_name = model_name
+        self.max_new_tokens = max_new_tokens
+        self.temperature = temperature
         self.tokenizer = AutoTokenizer.from_pretrained(model_name)
         self.model = AutoModelForCausalLM.from_pretrained(
             model_name,
@@ -134,7 +148,7 @@ class GSM8kEvaluator:
         )
         
         # Format the prompt (adjust based on your model's expected format)
-        prompt = f"Question: {question}\n\nLet me think step by step.\n<think>"
+        prompt = f"Please solve the following math problem. Your answer must end with the final numerical result in the format: ####<final answer>. \n\nProblem: {question}\n<think>"
         
         # Tokenize input
         inputs = self.tokenizer(prompt, return_tensors="pt").to(self.model.device)
@@ -145,9 +159,9 @@ class GSM8kEvaluator:
         with torch.no_grad():
             outputs = self.model.generate(
                 inputs.input_ids,
-                max_new_tokens=2048,
+                max_new_tokens=self.max_new_tokens,
                 do_sample=True,
-                temperature=0.7,
+                temperature=self.temperature,
                 logits_processor=[processor],
                 pad_token_id=self.tokenizer.eos_token_id,
             )
@@ -315,20 +329,20 @@ class GSM8kEvaluator:
 
 def main():
     """Main evaluation function."""
-    # Configuration parameters to test
-    thinking_efforts = [0.0, 0.25, 0.5, 0.75, 1.0, 1.25, 1.5]
-    scale_factors = [1.5, 2.0, 2.5, 3.0, 4.0]
-    
     # Initialize evaluator
-    evaluator = GSM8kEvaluator()
-    
+    evaluator = GSM8kEvaluator(
+        model_name=EVALUATION_CONFIG["model_name"],
+        max_new_tokens=EVALUATION_CONFIG["max_new_tokens"],
+        temperature=EVALUATION_CONFIG["temperature"],
+    )
+
     # Run evaluation
     evaluator.evaluate_configurations(
-        thinking_efforts=thinking_efforts,
-        scale_factors=scale_factors,
-        max_questions=50  # Start with 50 questions for faster testing
+        thinking_efforts=EVALUATION_CONFIG["thinking_efforts"],
+        scale_factors=EVALUATION_CONFIG["scale_factors"],
+        max_questions=EVALUATION_CONFIG["max_questions"],
     )
-    
+
     # Save results
     evaluator.save_results_to_csv()
 

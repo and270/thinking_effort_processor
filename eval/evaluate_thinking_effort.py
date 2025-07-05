@@ -18,17 +18,19 @@ import pandas as pd
 from thinking_effort_transformers import ThinkingEffortProcessor
 
 EVALUATION_CONFIG = {
-    "model_name": "deepseek-ai/DeepSeek-R1-Distill-Qwen-1.5B",
+    "model_name": "Qwen/Qwen3-1.7B",
     "thinking_efforts": [0.0, 0.25, 0.5, 0.75, 1.0, 1.25, 1.5],
     "scale_factors": [1.5, 2.0, 2.5, 3.0, 4.0],
     "max_questions": 300,
     "max_new_tokens": 8192,
     "temperature": 0.6,
+    "top_p": 0.95,
+    "top_k": 20,
 }
 
 
 class GSM8kEvaluator:
-    def __init__(self, model_name: str, max_new_tokens: int, temperature: float, device: str = "auto"):
+    def __init__(self, model_name: str, max_new_tokens: int, temperature: float, top_p: float, top_k: int, device: str = "auto"):
         """
         Initialize the evaluator with a model and tokenizer.
         
@@ -36,12 +38,16 @@ class GSM8kEvaluator:
             model_name: HuggingFace model name
             max_new_tokens: Maximum number of new tokens to generate
             temperature: Sampling temperature for generation
+            top_p: Top-p for nucleus sampling
+            top_k: Top-k for sampling
             device: Device to use for inference ("auto", "cuda", "cpu")
         """
         print(f"Loading model: {model_name}")
         self.model_name = model_name
         self.max_new_tokens = max_new_tokens
         self.temperature = temperature
+        self.top_p = top_p
+        self.top_k = top_k
         self.tokenizer = AutoTokenizer.from_pretrained(model_name)
         self.model = AutoModelForCausalLM.from_pretrained(
             model_name,
@@ -147,8 +153,16 @@ class GSM8kEvaluator:
             scale_factor=scale_factor
         )
         
-        # Format the prompt (adjust based on your model's expected format)
-        prompt = f"Please solve the following math problem. Your answer must end with the final numerical result in the format: ####<final answer>. \n\nProblem: {question}\n<think>"
+        # Format the prompt for Qwen3 instruct model
+        messages = [
+            {"role": "user", "content": f"Please solve the following math problem. Your answer must end with the final numerical result in the format: ####<final answer>. \n\nProblem: {question}"}
+        ]
+        prompt = self.tokenizer.apply_chat_template(
+            messages,
+            tokenize=False,
+            add_generation_prompt=True,
+            enable_thinking=True
+        )
         
         # Tokenize input
         inputs = self.tokenizer(prompt, return_tensors="pt").to(self.model.device)
@@ -162,6 +176,8 @@ class GSM8kEvaluator:
                 max_new_tokens=self.max_new_tokens,
                 do_sample=True,
                 temperature=self.temperature,
+                top_p=self.top_p,
+                top_k=self.top_k,
                 logits_processor=[processor],
                 pad_token_id=self.tokenizer.eos_token_id,
             )
@@ -334,6 +350,8 @@ def main():
         model_name=EVALUATION_CONFIG["model_name"],
         max_new_tokens=EVALUATION_CONFIG["max_new_tokens"],
         temperature=EVALUATION_CONFIG["temperature"],
+        top_p=EVALUATION_CONFIG["top_p"],
+        top_k=EVALUATION_CONFIG["top_k"],
     )
 
     # Run evaluation

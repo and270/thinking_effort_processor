@@ -6,10 +6,16 @@ class ThinkingEffortProcessor(LogitsProcessor):
     A custom LogitsProcessor for Hugging Face Transformers that scales the logit for an
     "end-of-thinking" token based on a `thinking_effort` parameter—until that token is
     actually generated for each sequence, at which point it stops scaling for that sequence.
+    When `keep_thinking_token_id` is provided, its logit is scaled inversely to the
+    end-of-thinking token to encourage continued reflection.
 
     Args:
         end_thinking_token_id (int):
             The special token ID representing the end-of-thinking marker (e.g. </think>).
+        keep_thinking_token_id (int, optional):
+            A token ID to encourage the model to use when thinking, like "Wait". Its logit will be
+            scaled up when `thinking_effort` > 1 and down when `thinking_effort` < 1.
+            Default is None.
         thinking_effort (float, optional):
             Controls how heavily to scale the end_thinking_token_id. Interpreted via:
                 scale = scale_factor ** (1.0 - thinking_effort)
@@ -27,6 +33,7 @@ class ThinkingEffortProcessor(LogitsProcessor):
         - For each sequence in a batch, if the end_thinking_token_id has already appeared
           in previous steps of generation, no further scaling is applied for that sequence.
         - Otherwise, the logit for the end_thinking_token_id is multiplied by `scale`.
+        - If `keep_thinking_token_id` is given, its logit is scaled by `1/scale`.
 
 
     Explanation:
@@ -34,11 +41,13 @@ class ThinkingEffortProcessor(LogitsProcessor):
             1. If that sequence has already generated `end_thinking_token_id`, do nothing.
             2. Otherwise, scale that token's logit by `scale = scale_factor ** (1.0 - thinking_effort)`.
         - This makes the end token more or less likely to appear, depending on `thinking_effort`.
+        - The "keep thinking" token is scaled by the inverse factor to have the opposite effect.
     """
 
-    def __init__(self, end_thinking_token_id, thinking_effort=1.0, scale_factor=2):
+    def __init__(self, end_thinking_token_id, keep_thinking_token_id=None, thinking_effort=1.0, scale_factor=2):
         super().__init__()
         self.end_thinking_token_id = end_thinking_token_id
+        self.keep_thinking_token_id = keep_thinking_token_id
         self.thinking_effort = thinking_effort
         self.scale_factor = scale_factor
         # Track which sequences (by index) have already produced the end_thinking_token_id
@@ -60,7 +69,9 @@ class ThinkingEffortProcessor(LogitsProcessor):
                 for sequences that have not yet generated it.
         """
         # Compute the scale factor from the current thinking_effort
-        scale = self.scale_factor ** (1.0 - self.thinking_effort)
+        end_scale = self.scale_factor ** (1.0 - self.thinking_effort)
+        if self.keep_thinking_token_id is not None:
+            keep_scale = self.scale_factor ** (self.thinking_effort - 1.0)
 
         batch_size = input_ids.size(0)
         # For each sequence in the batch, check if we've generated the end token before
@@ -77,6 +88,8 @@ class ThinkingEffortProcessor(LogitsProcessor):
                 continue
 
             # If we haven't encountered it yet, scale the logit for the end_thinking_token
-            scores[i, self.end_thinking_token_id] *= scale
+            scores[i, self.end_thinking_token_id] *= end_scale
+            if self.keep_thinking_token_id is not None:
+                scores[i, self.keep_thinking_token_id] *= keep_scale
 
         return scores

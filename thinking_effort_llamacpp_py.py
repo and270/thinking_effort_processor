@@ -1,8 +1,8 @@
-def thinking_effort_processor(thinking_effort, end_thinking_token_id, scale_factor=2):
+def thinking_effort_processor(thinking_effort, end_thinking_token_id, keep_thinking_token_id=None, scale_factor=2):
     """
     Creates a callable logit-processor that modifies the probability of an 'end thinking' token
-    based on the specified thinking effort. Typically used with llama-cpp or similar backends
-    that support a custom logits_processor.
+    based on the specified thinking effort. When `keep_thinking_token_id` is provided, it also
+    increases the probability of a 'keep thinking' token to encourage reflection.
 
     Args:
         thinking_effort (float):
@@ -13,6 +13,10 @@ def thinking_effort_processor(thinking_effort, end_thinking_token_id, scale_fact
               the probability of the end_thinking_token_id (i.e., large scaling).
         end_thinking_token_id (int):
             The token ID that marks the end of the "thinking" phase (e.g. </think>). On QwQ model, for example, this is 151668.
+        keep_thinking_token_id (int, optional):
+            A token ID to encourage the model to use when thinking, like "Wait". Its logit will be
+            scaled up when `thinking_effort` > 1 and down when `thinking_effort` < 1.
+            Default is None.
         scale_factor (float, optional):
             Controls the intensity of the scaling effect (default=2).
             - At thinking_effort=0.0, the end_thinking_token_id logit is multiplied by
@@ -34,7 +38,9 @@ def thinking_effort_processor(thinking_effort, end_thinking_token_id, scale_fact
         - Once the end token is generated, the processor stops modifying logits altogether.
     """
     # Compute how strongly to scale the end_thinking_token_id
-    scale = scale_factor ** (1.0 - thinking_effort)
+    end_scale = scale_factor ** (1.0 - thinking_effort)
+    if keep_thinking_token_id is not None:
+        keep_scale = scale_factor ** (thinking_effort - 1.0)
 
     # We store the "has generated end token" state in a list to make it mutable in this closure
     token_generated = [False]
@@ -79,7 +85,9 @@ def thinking_effort_processor(thinking_effort, end_thinking_token_id, scale_fact
             return logits
 
         # Otherwise, multiply its logit by the scale factor
-        logits[end_thinking_token_id] *= scale
+        logits[end_thinking_token_id] *= end_scale
+        if keep_thinking_token_id is not None:
+            logits[keep_thinking_token_id] *= keep_scale
         return logits
 
     return processor

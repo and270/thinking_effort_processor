@@ -19,8 +19,8 @@ from thinking_effort_transformers import ThinkingEffortProcessor
 
 EVALUATION_CONFIG = {
     "model_name": "Qwen/Qwen3-1.7B",
-    "thinking_efforts": [0.0, 0.25, 0.5, 0.75, 1.0, 1.25, 1.5],
-    "scale_factors": [1.5, 2.0, 2.5, 3.0, 4.0],
+    "thinking_efforts": [0.0, 1.25, 1.5, 2.0],
+    "scale_factors": [2.0, 2.5, 3.0, 4.0],
     "max_questions": 300,
     "max_new_tokens": 8192,
     "temperature": 0.6,
@@ -59,6 +59,15 @@ class GSM8kEvaluator:
         # Find the end-of-thinking token ID
         self.end_thinking_token_id = self.find_end_thinking_token()
         print(f"End thinking token ID: {self.end_thinking_token_id}")
+
+        # Find the keep-thinking token ID for "Wait"
+        wait_token_ids = self.tokenizer.encode("Wait", add_special_tokens=False)
+        if len(wait_token_ids) == 1:
+            self.keep_thinking_token_id = wait_token_ids[0]
+            print(f"Keep thinking token 'Wait' ID: {self.keep_thinking_token_id}")
+        else:
+            print(f"Warning: 'Wait' tokenized into {wait_token_ids}. Disabling keep-thinking logic.")
+            self.keep_thinking_token_id = None
         
         # Load GSM8k dataset
         print("Loading GSM8k dataset...")
@@ -149,6 +158,7 @@ class GSM8kEvaluator:
         # Create the thinking effort processor
         processor = ThinkingEffortProcessor(
             end_thinking_token_id=self.end_thinking_token_id,
+            keep_thinking_token_id=self.keep_thinking_token_id,
             thinking_effort=thinking_effort,
             scale_factor=scale_factor
         )
@@ -270,6 +280,8 @@ class GSM8kEvaluator:
             print(f"Thinking effort: {thinking_effort}, Scale factor: {scale_factor}")
             
             config_results = []
+            running_correct_count = 0
+            running_total_tokens = 0
             
             for question_idx, example in enumerate(test_dataset):
                 question = example["question"]
@@ -281,6 +293,22 @@ class GSM8kEvaluator:
                 
                 config_results.append(result)
                 self.results.append(result)
+
+                if result["is_correct"]:
+                    running_correct_count += 1
+                running_total_tokens += result["total_tokens"]
+
+                num_questions_so_far = len(config_results)
+                current_accuracy = running_correct_count / num_questions_so_far
+                avg_tokens_so_far = running_total_tokens / num_questions_so_far
+
+                print(
+                    f"  [Q {question_idx + 1}] "
+                    f"Correct: {str(result['is_correct']):<5}. "
+                    f"Score: {current_accuracy:.2f} ({running_correct_count}/{num_questions_so_far}). "
+                    f"Tokens: {result['total_tokens']}. "
+                    f"Avg Tokens: {avg_tokens_so_far:.1f}"
+                )
             
             # Calculate configuration summary
             correct_count = sum(1 for r in config_results if r["is_correct"])

@@ -19,8 +19,8 @@ from thinking_effort_transformers import ThinkingEffortProcessor
 
 EVALUATION_CONFIG = {
     "model_name": "Qwen/Qwen3-1.7B",
-    "thinking_efforts": [0.0, 1.25, 1.5, 2.0],
-    "scale_factors": [2.0, 2.5, 3.0, 4.0],
+    "thinking_efforts": [1.1, 1.3, 1.4],
+    "scale_factors": [2.0, 2.5, 3.0],
     "max_questions": 300,
     "max_new_tokens": 8192,
     "temperature": 0.6,
@@ -47,7 +47,7 @@ class GSM8kEvaluator:
         self.max_new_tokens = max_new_tokens
         self.temperature = temperature
         self.top_p = top_p
-        self.top_k = top_k
+        self.top_k = top_k  
         self.tokenizer = AutoTokenizer.from_pretrained(model_name)
         self.model = AutoModelForCausalLM.from_pretrained(
             model_name,

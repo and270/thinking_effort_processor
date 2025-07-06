@@ -9,6 +9,7 @@ import time
 from datetime import datetime
 from typing import List, Dict, Tuple, Optional
 import itertools
+import os
 
 import torch
 from transformers import AutoTokenizer, AutoModelForCausalLM
@@ -21,7 +22,7 @@ EVALUATION_CONFIG = {
     "model_name": "Qwen/Qwen3-1.7B",
     "thinking_efforts": [1.1, 1.3, 1.4],
     "scale_factors": [2.0, 2.5, 3.0],
-    "max_questions": 300,
+    "max_questions": 200,
     "max_new_tokens": 8192,
     "temperature": 0.6,
     "top_p": 0.95,
@@ -77,6 +78,9 @@ class GSM8kEvaluator:
         
         # Results storage
         self.results = []
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        self.results_filename = f"gsm8k_thinking_effort_results_{timestamp}.csv"
+        print(f"Results will be saved incrementally to: {self.results_filename}")
         
     def find_end_thinking_token(self) -> int:
         """Find the token ID for the end-of-thinking marker."""
@@ -262,6 +266,12 @@ class GSM8kEvaluator:
                 "response": f"ERROR: {str(e)}",
             }
     
+    def save_result(self, result: Dict):
+        """Append a single result to the CSV file."""
+        df = pd.DataFrame([result])
+        file_exists = os.path.exists(self.results_filename)
+        df.to_csv(self.results_filename, mode='a', header=not file_exists, index=False)
+    
     def evaluate_configurations(self, 
                               thinking_efforts: List[float],
                               scale_factors: List[float],
@@ -306,6 +316,7 @@ class GSM8kEvaluator:
                     question, gold_answer, thinking_effort, scale_factor, question_idx
                 )
                 
+                self.save_result(result)
                 config_results.append(result)
                 self.results.append(result)
 
@@ -338,19 +349,16 @@ class GSM8kEvaluator:
             print(f"  Avg total tokens: {avg_total_tokens:.1f}")
             print(f"  Avg generation time: {avg_generation_time:.2f}s")
     
-    def save_results_to_csv(self, filename: Optional[str] = None) -> str:
-        """Save all results to a CSV file."""
-        if filename is None:
-            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-            filename = f"gsm8k_thinking_effort_results_{timestamp}.csv"
+    def save_results_to_csv(self) -> str:
+        """Saves summary of results to a new CSV file."""
+        if not self.results:
+            print("No results to save summary for.")
+            return ""
+
+        print(f"\nDetailed results have been saved to: {self.results_filename}")
         
-        # Convert results to DataFrame
+        # Convert results to DataFrame for summary calculation
         df = pd.DataFrame(self.results)
-        
-        # Save to CSV
-        df.to_csv(filename, index=False)
-        
-        print(f"\nResults saved to: {filename}")
         
         # Print summary statistics
         print("\n=== SUMMARY STATISTICS ===")
@@ -377,13 +385,13 @@ class GSM8kEvaluator:
         
         # Create summary DataFrame and save
         summary_df = pd.DataFrame(summary_data)
-        summary_filename = filename.replace(".csv", "_summary.csv")
+        summary_filename = self.results_filename.replace(".csv", "_summary.csv")
         summary_df.to_csv(summary_filename, index=False)
         
         print(f"Summary saved to: {summary_filename}")
         print(summary_df.to_string(index=False))
         
-        return filename
+        return self.results_filename
 
 
 def main():

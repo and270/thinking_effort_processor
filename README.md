@@ -81,9 +81,14 @@ The `inference_example.py` script provides a clear, minimal example of how to us
 
 ### How it Works
 
-The script demonstrates several key steps:
+The script is configured with three presets for thinking effort:
+-   `"low"`: `thinking_effort=0.7`, `scale_factor=2.0`
+-   `"medium"`: `thinking_effort=1.0`, `scale_factor=2.0`
+-   `"high"`: `thinking_effort=1.3`, `scale_factor=2.0`
+
+It demonstrates several key steps:
 1.  **Finding Special Token IDs**: It includes a function `find_end_thinking_token` that shows how to programmatically find the crucial `</think>` token ID for your model. This is a necessary first step.
-2.  **Processor Initialization**: It shows how to create an instance of `ThinkingEffortProcessor` with a specific `thinking_effort` and `scale_factor`.
+2.  **Processor Initialization**: It shows how to create an instance of `ThinkingEffortProcessor` based on the selected preset.
 3.  **Model Generation**: It runs a single prompt through the model with the processor enabled to control the thinking process.
 
 ### Run the Example
@@ -94,4 +99,4 @@ To run the example, execute the following command from the root of the repositor
 python inference_example.py
 ```
 
-You can modify the parameters at the top of the `inference_example.py` file, such as `THINKING_EFFORT`, `SCALE_FACTOR`, and the prompt itself, to experiment with different settings.
+By default, the script runs with the `"high"` preset. You can easily change this by modifying the last line in `inference_example.py` to use `"medium"` or `"low"` to experiment with different settings.

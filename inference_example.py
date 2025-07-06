@@ -1,17 +1,22 @@
 import torch
 from transformers import AutoTokenizer, AutoModelForCausalLM
-from typing import Optional
+from typing import Optional, Dict
 
 from thinking_effort_transformers import ThinkingEffortProcessor
 
 # --- Configuration ---
 MODEL_NAME = "Qwen/Qwen3-1.7B"
-THINKING_EFFORT = 1.3
-SCALE_FACTOR = 2.0
 MAX_NEW_TOKENS = 512
 TEMPERATURE = 0.6
 TOP_P = 0.95
 TOP_K = 50
+
+# Define thinking effort presets
+THINKING_EFFORT_PRESETS: Dict[str, Dict[str, float]] = {
+    "low": {"effort": 0.7, "scale": 2.0},
+    "medium": {"effort": 1.0, "scale": 2.0},
+    "high": {"effort": 1.3, "scale": 2.0},
+}
 
 def find_end_thinking_token(tokenizer: AutoTokenizer) -> int:
     """
@@ -65,10 +70,18 @@ def find_keep_thinking_token(tokenizer: AutoTokenizer, token_str: str = "Wait") 
     return None
 
 
-def run_inference():
+def run_inference(preset: str):
     """
-    Loads a model and runs a single inference example using the ThinkingEffortProcessor.
+    Loads a model and runs a single inference example using a preset ThinkingEffortProcessor configuration.
     """
+    if preset not in THINKING_EFFORT_PRESETS:
+        raise ValueError(f"Preset '{preset}' not found. Available presets: {list(THINKING_EFFORT_PRESETS.keys())}")
+
+    config = THINKING_EFFORT_PRESETS[preset]
+    thinking_effort = config["effort"]
+    scale_factor = config["scale"]
+
+    print(f"Running inference with preset: '{preset}' (Effort: {thinking_effort}, Scale: {scale_factor})")
     print(f"Loading model: {MODEL_NAME}")
     tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME)
     model = AutoModelForCausalLM.from_pretrained(
@@ -83,12 +96,12 @@ def run_inference():
     keep_thinking_token_id = find_keep_thinking_token(tokenizer)
 
     # 2. Create the ThinkingEffortProcessor
-    print(f"\nInitializing ThinkingEffortProcessor with effort={THINKING_EFFORT} and scale={SCALE_FACTOR}")
+    print(f"\nInitializing ThinkingEffortProcessor with effort={thinking_effort} and scale={scale_factor}")
     logits_processor = ThinkingEffortProcessor(
         end_thinking_token_id=end_thinking_token_id,
         keep_thinking_token_id=keep_thinking_token_id,
-        thinking_effort=THINKING_EFFORT,
-        scale_factor=SCALE_FACTOR,
+        thinking_effort=thinking_effort,
+        scale_factor=scale_factor,
     )
 
     # 3. Prepare the prompt
@@ -128,4 +141,6 @@ def run_inference():
     print(response)
 
 if __name__ == "__main__":
-    run_inference()
+    # Run the inference with the "high" thinking effort preset.
+    # You can change this to "medium" or "low" to see the difference.
+    run_inference("high")

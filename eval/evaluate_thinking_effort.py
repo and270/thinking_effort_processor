@@ -96,24 +96,10 @@ class GSM8kEvaluator:
         return 151668
     
     def extract_answer(self, text: str) -> Optional[float]:
-        """Extract the final numerical answer from the model's response."""
-        # Look for patterns like "The answer is X" or "#### X" (GSM8k format)
-        patterns = [
-            r"(?:the answer is|answer:|####)\s*([+-]?\d*\.?\d+)",
-            r"(?:final answer|answer)\s*[:=]?\s*([+-]?\d*\.?\d+)",
-            r"([+-]?\d*\.?\d+)\s*(?:is the answer|is the final answer)",
-            r"\$([+-]?\d*\.?\d+)",  # Dollar amounts
-        ]
-        
-        for pattern in patterns:
-            matches = re.findall(pattern, text.lower())
-            if matches:
-                try:
-                    return float(matches[-1])  # Take the last match
-                except ValueError:
-                    continue
-        
-        return None
+        numbers = re.findall(r'-?\$?[\d,]*\.?\d+', text)
+        if not numbers:
+            return None
+        return float(numbers[-1].replace('$', '').replace(',', ''))
     
     def extract_gold_answer(self, answer_text: str) -> float:
         """Extract the gold answer from GSM8k answer format."""

@@ -26,6 +26,7 @@ EVALUATION_CONFIG = {
     "temperature": 0.6,
     "top_p": 0.95,
     "top_k": 20,
+    "include_baseline": True,
 }
 
 
@@ -148,20 +149,23 @@ class GSM8kEvaluator:
         
         return thinking_tokens, total_tokens
     
-    def generate_response(self, question: str, thinking_effort: float, scale_factor: float) -> Dict:
+    def generate_response(self, question: str, thinking_effort: Optional[float], scale_factor: Optional[float]) -> Dict:
         """
-        Generate a response to a question using the thinking effort processor.
+        Generate a response to a question, optionally using the thinking effort processor.
         
         Returns:
             Dictionary with response details
         """
-        # Create the thinking effort processor
-        processor = ThinkingEffortProcessor(
-            end_thinking_token_id=self.end_thinking_token_id,
-            keep_thinking_token_id=self.keep_thinking_token_id,
-            thinking_effort=thinking_effort,
-            scale_factor=scale_factor
-        )
+        # Create the thinking effort processor only if parameters are provided
+        logits_processor = []
+        if thinking_effort is not None and scale_factor is not None:
+            processor = ThinkingEffortProcessor(
+                end_thinking_token_id=self.end_thinking_token_id,
+                keep_thinking_token_id=self.keep_thinking_token_id,
+                thinking_effort=thinking_effort,
+                scale_factor=scale_factor
+            )
+            logits_processor.append(processor)
         
         # Format the prompt for Qwen3 instruct model
         messages = [
@@ -188,7 +192,7 @@ class GSM8kEvaluator:
                 temperature=self.temperature,
                 top_p=self.top_p,
                 top_k=self.top_k,
-                logits_processor=[processor],
+                logits_processor=logits_processor if logits_processor else None,
                 pad_token_id=self.tokenizer.eos_token_id,
             )
         
@@ -212,10 +216,13 @@ class GSM8kEvaluator:
         }
     
     def evaluate_single_question(self, question: str, gold_answer: float, 
-                               thinking_effort: float, scale_factor: float, 
+                               thinking_effort: Optional[float], scale_factor: Optional[float], 
                                question_idx: int) -> Dict:
         """Evaluate a single question with given parameters."""
-        print(f"Evaluating question {question_idx + 1} with effort={thinking_effort}, scale={scale_factor}")
+        if thinking_effort is None:
+            print(f"Evaluating question {question_idx + 1} (Baseline)")
+        else:
+            print(f"Evaluating question {question_idx + 1} with effort={thinking_effort}, scale={scale_factor}")
         
         try:
             result = self.generate_response(question, thinking_effort, scale_factor)
@@ -229,8 +236,8 @@ class GSM8kEvaluator:
                 "question_idx": question_idx,
                 "question": question,
                 "gold_answer": gold_answer,
-                "thinking_effort": thinking_effort,
-                "scale_factor": scale_factor,
+                "thinking_effort": "baseline" if thinking_effort is None else thinking_effort,
+                "scale_factor": "baseline" if scale_factor is None else scale_factor,
                 "predicted_answer": result["predicted_answer"],
                 "is_correct": is_correct,
                 "thinking_tokens": result["thinking_tokens"],
@@ -245,8 +252,8 @@ class GSM8kEvaluator:
                 "question_idx": question_idx,
                 "question": question,
                 "gold_answer": gold_answer,
-                "thinking_effort": thinking_effort,
-                "scale_factor": scale_factor,
+                "thinking_effort": "baseline" if thinking_effort is None else thinking_effort,
+                "scale_factor": "baseline" if scale_factor is None else scale_factor,
                 "predicted_answer": None,
                 "is_correct": False,
                 "thinking_tokens": 0,
@@ -258,7 +265,8 @@ class GSM8kEvaluator:
     def evaluate_configurations(self, 
                               thinking_efforts: List[float],
                               scale_factors: List[float],
-                              max_questions: int = 100) -> None:
+                              max_questions: int = 100,
+                              include_baseline: bool = True) -> None:
         """
         Evaluate all combinations of thinking_effort and scale_factor parameters.
         
@@ -266,6 +274,7 @@ class GSM8kEvaluator:
             thinking_efforts: List of thinking effort values to test
             scale_factors: List of scale factor values to test
             max_questions: Maximum number of questions to evaluate (for faster testing)
+            include_baseline: Whether to include a baseline run without the processor.
         """
         # Limit dataset size for testing
         test_dataset = self.dataset.select(range(min(max_questions, len(self.dataset))))
@@ -273,11 +282,17 @@ class GSM8kEvaluator:
         # Generate all parameter combinations
         config_combinations = list(itertools.product(thinking_efforts, scale_factors))
         
+        if include_baseline:
+            config_combinations.insert(0, (None, None))
+        
         print(f"Testing {len(config_combinations)} configurations on {len(test_dataset)} questions")
         
         for config_idx, (thinking_effort, scale_factor) in enumerate(config_combinations):
             print(f"\n--- Configuration {config_idx + 1}/{len(config_combinations)} ---")
-            print(f"Thinking effort: {thinking_effort}, Scale factor: {scale_factor}")
+            if thinking_effort is None:
+                print("Testing Baseline (no thinking effort processor)")
+            else:
+                print(f"Thinking effort: {thinking_effort}, Scale factor: {scale_factor}")
             
             config_results = []
             running_correct_count = 0
@@ -387,6 +402,7 @@ def main():
         thinking_efforts=EVALUATION_CONFIG["thinking_efforts"],
         scale_factors=EVALUATION_CONFIG["scale_factors"],
         max_questions=EVALUATION_CONFIG["max_questions"],
+        include_baseline=EVALUATION_CONFIG.get("include_baseline", True),
     )
 
     # Save results

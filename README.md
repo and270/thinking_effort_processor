@@ -19,64 +19,79 @@ This approach works with models trained with explicit reasoning patterns (using 
 
 ## Installation
 
-### For use with Transformers
+To use the `ThinkingEffortProcessor` with Hugging Face Transformers, install the following libraries:
 
 ```bash
-pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu124
-pip install transformers
-```
-
-### For use with llama-cpp-python (GGUF quantized models)
-
-```bash
-pip install llama-cpp-python
+pip install torch transformers accelerate
 ```
 
 ## How It Works
 
 The controller scales the logits (prediction scores) for the end-thinking token based on the desired thinking effort:
 
-- Scale = scale_factor ^ (1.0 - thinking_effort)
-- When thinking_effort = 0, the end token is strongly boosted (less thinking)
-- When thinking_effort = 1, no scaling occurs (normal thinking)
-- When thinking_effort > 1, the end token is suppressed (more thinking)
+- `scale = scale_factor ^ (1.0 - thinking_effort)`
+- When `thinking_effort = 0`, the end token is strongly boosted (less thinking)
+- When `thinking_effort = 1`, no scaling occurs (normal thinking)
+- When `thinking_effort > 1`, the end token is suppressed (more thinking)
 
-Once the end-thinking token is generated, the controller stops modifying logits.
+The logic is implemented in the `ThinkingEffortProcessor` class, which is a `LogitsProcessor` for the `transformers` library. Once the end-thinking token is generated for a sequence in a batch, the controller stops modifying the logits for that sequence.
 
 ## Important Notes
 
-- This is an experimental approach - results may vary across models
-- You must identify the correct token ID for `</think>` in your specific model
-- Different models may require different prompt formats and chat templates
-- The `scale_factor` parameter may need adjustment based on the model
+- This is an experimental approach—results may vary across models.
+- You must identify the correct token ID for `</think>` in your specific model. The evaluation script provides examples of how to do this.
+- Different models may require different prompt formats and chat templates.
+- The `scale_factor` parameter may need adjustment based on the model.
 
-See the example Python files for implementation details and usage patterns.
+## Running the Evaluation
 
-## Example Dependencies
+This repository includes a script to evaluate the `ThinkingEffortProcessor` on the `gsm8k` benchmark. It tests various combinations of `thinking_effort` and `scale_factor` and saves the results to a CSV file.
 
-To run the provided scripts, you may need to install additional packages.
+### 1. Install Dependencies
 
-### For the evaluation script (`eval/evaluate_thinking_effort.py`)
+To run the evaluation script, you will need to install a few additional packages:
 
 ```bash
 pip install transformers datasets pandas accelerate
 ```
 
-### For the inference scripts (`examples/`)
+### 2. Configure the Evaluation
 
-The core dependency is either `transformers` or `llama-cpp-python`, which you should have installed from the **Installation** section. No other dependencies are required for the inference examples.
+Open the `eval/evaluate_thinking_effort.py` file and modify the `EVALUATION_CONFIG` dictionary at the top to set up your test run.
 
-## Running Examples
+Key parameters include:
+- `model_name`: The Hugging Face model you want to evaluate.
+- `thinking_efforts`: A list of thinking effort values to test.
+- `scale_factors`: A list of scale factors to test.
+- `max_questions`: The number of questions from the `gsm8k` test set to use.
 
-### Bouncing Ball Example
-To run the bouncing ball example with llama cpp python:
+### 3. Run the Script
+
+Execute the script from the root directory of the project:
 
 ```bash
-cd examples/bouncing_ball
-python inference_high_thinking_llamacpp.py
+python eval/evaluate_thinking_effort.py
 ```
 
-This example demonstrates the inference for bouncing balls prompt on a high thinking setup (2.5)
+The script will print its progress to the console and save a detailed `gsm8k_thinking_effort_results_{timestamp}.csv` file in the root directory upon completion.
 
-### Other Examples
-Additional examples can be found in the `examples` directory, each showing different use cases for the thinking effort controller.
+## Running a Single Inference Example
+
+The `inference_example.py` script provides a clear, minimal example of how to use the `ThinkingEffortProcessor` for a single generation task. It is a good starting point for integrating the processor into your own code.
+
+### How it Works
+
+The script demonstrates several key steps:
+1.  **Finding Special Token IDs**: It includes a function `find_end_thinking_token` that shows how to programmatically find the crucial `</think>` token ID for your model. This is a necessary first step.
+2.  **Processor Initialization**: It shows how to create an instance of `ThinkingEffortProcessor` with a specific `thinking_effort` and `scale_factor`.
+3.  **Model Generation**: It runs a single prompt through the model with the processor enabled to control the thinking process.
+
+### Run the Example
+
+To run the example, execute the following command from the root of the repository:
+
+```bash
+python inference_example.py
+```
+
+You can modify the parameters at the top of the `inference_example.py` file, such as `THINKING_EFFORT`, `SCALE_FACTOR`, and the prompt itself, to experiment with different settings.

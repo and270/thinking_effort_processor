@@ -70,10 +70,42 @@ Key parameters include:
 Execute the script from the root directory of the project:
 
 ```bash
-python eval/evaluate_thinking_effort.py
+python eval/evaluate_gsm8k.py
 ```
 
 The script will print its progress to the console and save a detailed `gsm8k_thinking_effort_results_{timestamp}.csv` file in the root directory upon completion.
+
+## Running the AIME 2025 Evaluation
+
+This repository also includes a script to evaluate the `ThinkingEffortProcessor` on the `AIME/AIME` benchmark (2025-I subset). It follows the same principles as the GSM8k evaluator.
+
+### 1. Install Dependencies
+
+Ensure you have the necessary packages installed:
+
+```bash
+pip install transformers datasets pandas accelerate
+```
+
+### 2. Configure the Evaluation
+
+Open the `eval/evaluate_aime2025.py` file and modify the `EVALUATION_CONFIG` dictionary. The key parameters are similar to the GSM8k evaluation, but are tailored for the AIME dataset:
+- `model_name`: The Hugging Face model to evaluate.
+- `dataset_name`: The dataset name on Hugging Face (default: `"AIME/AIME"`).
+- `dataset_config`: The specific AIME competition to use (default: `"2025-I"`).
+- `thinking_efforts`: A list of thinking effort values.
+- `scale_factors`: A list of scale factors.
+- `max_questions`: The number of questions to test.
+
+### 3. Run the Script
+
+Execute the script from the root directory of the project:
+
+```bash
+python eval/evaluate_aime2025.py
+```
+
+The script will save its results to `aime2025_thinking_effort_results_{timestamp}.csv`.
 
 ## Running a Single Inference Example
 

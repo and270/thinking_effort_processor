@@ -6,15 +6,15 @@ from thinking_effort_transformers import ThinkingEffortProcessor
 
 # --- Configuration ---
 MODEL_NAME = "Qwen/Qwen3-1.7B"
-MAX_NEW_TOKENS = 512
+MAX_NEW_TOKENS = 8192
 TEMPERATURE = 0.6
 TOP_P = 0.95
 TOP_K = 50
 
 # Define thinking effort presets
-THINKING_EFFORT_PRESETS: Dict[str, Dict[str, float]] = {
+THINKING_EFFORT_PRESETS: Dict[str, Optional[Dict[str, float]]] = {
     "low": {"effort": 0.7, "scale": 2.0},
-    "medium": {"effort": 1.0, "scale": 2.0},
+    "medium": None,
     "high": {"effort": 1.3, "scale": 2.0},
 }
 
@@ -78,10 +78,7 @@ def run_inference(preset: str):
         raise ValueError(f"Preset '{preset}' not found. Available presets: {list(THINKING_EFFORT_PRESETS.keys())}")
 
     config = THINKING_EFFORT_PRESETS[preset]
-    thinking_effort = config["effort"]
-    scale_factor = config["scale"]
 
-    print(f"Running inference with preset: '{preset}' (Effort: {thinking_effort}, Scale: {scale_factor})")
     print(f"Loading model: {MODEL_NAME}")
     tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME)
     model = AutoModelForCausalLM.from_pretrained(
@@ -91,18 +88,28 @@ def run_inference(preset: str):
         trust_remote_code=True
     )
 
-    # 1. Find the special token IDs for the chosen model
-    end_thinking_token_id = find_end_thinking_token(tokenizer)
-    keep_thinking_token_id = find_keep_thinking_token(tokenizer)
+    logits_processors = []
+    if config:
+        thinking_effort = config["effort"]
+        scale_factor = config["scale"]
+        print(f"Running inference with preset: '{preset}' (Effort: {thinking_effort}, Scale: {scale_factor})")
 
-    # 2. Create the ThinkingEffortProcessor
-    print(f"\nInitializing ThinkingEffortProcessor with effort={thinking_effort} and scale={scale_factor}")
-    logits_processor = ThinkingEffortProcessor(
-        end_thinking_token_id=end_thinking_token_id,
-        keep_thinking_token_id=keep_thinking_token_id,
-        thinking_effort=thinking_effort,
-        scale_factor=scale_factor,
-    )
+        # 1. Find the special token IDs for the chosen model
+        end_thinking_token_id = find_end_thinking_token(tokenizer)
+        keep_thinking_token_id = find_keep_thinking_token(tokenizer)
+
+        # 2. Create the ThinkingEffortProcessor
+        print(f"\nInitializing ThinkingEffortProcessor with effort={thinking_effort} and scale={scale_factor}")
+        logits_processor = ThinkingEffortProcessor(
+            end_thinking_token_id=end_thinking_token_id,
+            keep_thinking_token_id=keep_thinking_token_id,
+            thinking_effort=thinking_effort,
+            scale_factor=scale_factor,
+        )
+        logits_processors.append(logits_processor)
+    else:
+        print(f"Running inference with preset: '{preset}' (no ThinkingEffortProcessor)")
+
 
     # 3. Prepare the prompt
     # This example uses the Qwen-3 chat template with thinking enabled.
@@ -131,7 +138,7 @@ def run_inference(preset: str):
         temperature=TEMPERATURE,
         top_p=TOP_P,
         top_k=TOP_K,
-        logits_processor=[logits_processor],
+        logits_processor=logits_processors,
         pad_token_id=tokenizer.eos_token_id,
     )
 
